@@ -4,28 +4,37 @@ A Very Simple Game Platform built on lispbuilder-sdl.
 
 ## Usage
 
+This software is in ALPHA status under heavy development. You are free
+to use it however you want given the liberal open source licensing.
+However, THE API WILL CHANGE, YOU HAVE BEEN WARNED.
+
 Subclass GAME and implement at least STEP-GAME and DRAW-GAME methods.
 
 Example game that is a red block that moves around with arrow buttons.
 
 ```common-lisp
-(asdf:load-system :platform)
+(ql:quickload :platform)
 
-(in-package :platform)
+(in-package :cl-user)
+(defpackage redblock
+  (:use :cl :platform))
+(in-package :redblock)
 
-(defclass redblock (game) ((x :initform 320 :accessor x)
-                           (y :initform 240 :accessor y)))
+(defclass redblock (game) ((x :initform 320) (y :initform 240)))
 
 (defmethod step-game ((game redblock) keys-down)
-  (when (member :up keys-down) (decf (y game)))
-  (when (member :down keys-down) (incf (y game)))
-  (when (member :left keys-down) (decf (x game)))
-  (when (member :right keys-down) (incf (x game))))
+  (with-slots (x y) game
+    (dolist (key keys-down)
+      (case key
+        (:up (decf y))
+        (:down (incf y))
+        (:left (decf x))
+        (:right (incf x))))))
 
 (defmethod draw-game ((game redblock))
-  (sdl:draw-box (sdl:rectangle-from-edges-*
-                  (x game) (y game) (+ 20 (x game)) (+ 20 (y game)))
-                  :color sdl:*red*))
+  (with-slots (x y) game
+    (sdl:draw-box (sdl:rectangle-from-edges-* x y (+ 20 x) (+ 20 y))
+                  :color sdl:*red*)))
 
 (game-loop 'redblock)
 ```

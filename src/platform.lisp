@@ -9,10 +9,11 @@
   (:export :game
            :init-game
            :input-map
-           :settings 
+           :settings
            :step-game
            :draw-game
-           :draw-string))
+           :draw-string
+           :game-loop))
 (in-package :platform)
 
 ;; utility functions
