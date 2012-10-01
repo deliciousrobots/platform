@@ -5,7 +5,7 @@
 
 (in-package :cl-user)
 (defpackage platform
-  (:use :cl)
+  (:use :cl :bordeaux-threads)
   (:export :game
            :init-game
            :input-map
@@ -95,6 +95,7 @@
          (keys-down nil)
          (settings (settings game)))
     (sdl:with-init ()
+      (init-game game)
       (sdl:initialise-default-font)
       (sdl:window (aget :screen-width settings :default 640)
                   (aget :screen-height settings :default 480)

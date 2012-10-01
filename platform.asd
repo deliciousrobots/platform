@@ -16,7 +16,7 @@
   :version "0.1"
   :author "Stephen A. Goss"
   :license "Modified BSD"
-  :depends-on (:lispbuilder-sdl)
+  :depends-on (:lispbuilder-sdl :bordeaux-threads)
   :components ((:module "src"
                 :components
                 ((:file "platform"))))
