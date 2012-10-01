@@ -116,8 +116,8 @@
 (defmethod step-game ((game breaker) keys-down)
   (dolist (key keys-down)
     (case key
-      (:left (decf x))
-      (:right (incf x)))))
+      (:left)
+      (:right))))
 
 (defmethod draw-game ((game breaker))
   (dolist (brick (bricks game))
