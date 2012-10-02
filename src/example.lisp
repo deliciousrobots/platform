@@ -71,6 +71,9 @@
       (sdl:rectangle-from-edges-* (x loc) (y loc) (x corner) (y corner))
       :color (color obj))))
 
+;; parameters
+(defparameter *paddle-speed* 8)
+
 (defclass breaker (game)
   ((bricks :accessor bricks)
    (xform :accessor xform)
@@ -114,10 +117,16 @@
   (setf (balls game) nil))
 
 (defmethod step-game ((game breaker) keys-down)
-  (dolist (key keys-down)
-    (case key
-      (:left)
-      (:right))))
+  (with-accessors ((x-paddle x)) (location (paddle game))
+    (dolist (key keys-down)
+      (case key
+        (:left (decf x-paddle *paddle-speed*))
+        (:right (incf x-paddle *paddle-speed*))
+        ))
+    (setf x-paddle (max x-paddle 0))
+    (setf x-paddle (min x-paddle (- (x (field-dim game))
+                                    (x (dimensions (paddle game))))))
+    ))
 
 (defmethod draw-game ((game breaker))
   (dolist (brick (bricks game))
