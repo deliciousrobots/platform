@@ -4,7 +4,7 @@
   (:use :cl :platform))
 (in-package :platform-example)
 
-(declaim (optimize (debug 3)))
+(declaim (optimize (debug 3) (speed 0)))
 
 ;; interfaces
 (defgeneric draw (obj xform))
@@ -51,7 +51,8 @@
 
 (defclass paddle (color-rect) ())
 
-(defclass ball (obj-circle has-color has-velocity) ())
+(defclass ball (obj-circle has-color has-velocity)
+  ((attached :initform T :initarg :attached :accessor attached)))
 
 (defmethod add ((obj1 vector-2d) (obj2 vector-2d))
   (vector-2d (+ (x obj1) (x obj2)) (+ (y obj1) (y obj2))))
@@ -71,8 +72,15 @@
       (sdl:rectangle-from-edges-* (x loc) (y loc) (x corner) (y corner))
       :color (color obj))))
 
+(defmethod draw ((obj ball) (xform xform-2d))
+  (let ((loc (apply-xform (location obj) xform))
+        (rad (* (radius obj) (x (scale xform)))))
+    (sdl:draw-filled-circle-* (x loc) (y loc) rad :color (color obj))))
+
 ;; parameters
 (defparameter *paddle-speed* 8)
+(defparameter *ball-radius* 5)
+(defparameter *ball-init-velocity* (vector-2d 3 -3))
 
 (defclass breaker (game)
   ((bricks :accessor bricks)
@@ -117,16 +125,44 @@
   (setf (balls game) nil))
 
 (defmethod step-game ((game breaker) keys-down)
+  ;; update paddle
   (with-accessors ((x-paddle x)) (location (paddle game))
     (dolist (key keys-down)
       (case key
         (:left (decf x-paddle *paddle-speed*))
         (:right (incf x-paddle *paddle-speed*))
+        (:up (when (count-if #'attached (balls game))
+               (mapc (lambda (b)
+                       (when (attached b)
+                         (setf (attached b) nil)  
+                         (setf (velocity b)
+                               *ball-init-velocity*)))
+                     (balls game))))
         ))
     (setf x-paddle (max x-paddle 0))
     (setf x-paddle (min x-paddle (- (x (field-dim game))
-                                    (x (dimensions (paddle game))))))
-    ))
+                                    (x (dimensions (paddle game)))))))
+  ;; update balls
+  (when (null (balls game))
+    (push (make-instance 'ball :radius *ball-radius*) (balls game)))
+  (setf (balls game)
+        (mapcar (lambda (b)
+                  (if (attached b)
+                    (progn
+                      (setf (location b)
+                            (add (location (paddle game))
+                                (vector-2d
+                                  (floor (x (dimensions (paddle game))) 2)
+                                  (* -1 (radius b)))))
+                      b)
+                    (progn
+                      (setf (location b)
+                            (add (location b)
+                                 (velocity b)))
+                      b)
+                    ))
+                (balls game)))
+  )
 
 (defmethod draw-game ((game breaker))
   (dolist (brick (bricks game))
@@ -138,6 +174,9 @@
       (+ (x (field-offset game)) (x (field-dim game)))
       (+ (y (field-offset game)) (y (field-dim game))))
     :color sdl:*green*)
-  (draw (paddle game) (xform game)))
+  (draw (paddle game) (xform game))
+  (mapc (lambda (b) (draw b (xform game)))
+        (balls game))
+  )
 
 ;; (game-loop 'breaker)
